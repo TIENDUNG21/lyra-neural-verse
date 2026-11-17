@@ -5,6 +5,8 @@
 [![CI](https://github.com/TIENDUNG21/lyra-neural-verse/actions/workflows/ci.yml/badge.svg)](https://github.com/TIENDUNG21/lyra-neural-verse/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-f5b942.svg)](LICENSE)
 
+<p align="center"><img src="assets/banner.svg" width="100%" alt="Animated diagram: the first couplet of Truyện Kiều with its tone pattern and the ta/là rhyme the decoder enforces"></p>
+
 Lyra is a 1.1-million-parameter transformer, trained from scratch with its own NumPy
 autograd on the 3,254 lines of Nguyễn Du's *Truyện Kiều*, that writes Vietnamese verse in
 lục bát form. A constrained decoder masks the vocabulary at every step so that the tones
