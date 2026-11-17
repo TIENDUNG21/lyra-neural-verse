@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+build/
+dist/
+
+# Downloads and training outputs (logs are committed explicitly)
+.cache/
+runs/*/*.npz
+runs/scratch/
+
+# Web
+web/node_modules/
+web/dist/
+web/public/model/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
