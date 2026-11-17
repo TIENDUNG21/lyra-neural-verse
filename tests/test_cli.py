@@ -48,7 +48,7 @@ def test_check_empty_input_is_an_error(capsys: pytest.CaptureFixture[str]) -> No
 
 def test_train_command_end_to_end(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     corpus = tmp_path / "c.txt"
-    lines = (ROOT / "data" / "truyen-kieu.txt").read_text(encoding="utf-8").splitlines()[:80]
+    lines = (ROOT / "data" / "truyen-kieu.txt").read_text(encoding="utf-8").splitlines()[:400]
     corpus.write_text("\n".join(lines), encoding="utf-8")
     config = tmp_path / "cfg.json"
     config.write_text(
@@ -66,6 +66,18 @@ def test_train_command_end_to_end(tmp_path: Path, capsys: pytest.CaptureFixture[
     assert code == 0
     assert "done: 4 steps" in capsys.readouterr().out
     assert (tmp_path / "run" / "best.npz").exists()
+    model = tmp_path / "m.bin"
+    run = tmp_path / "run"
+    assert main(["export", "--checkpoint", str(run / "best.npz"), "--tokenizer",
+                 str(run / "tokenizer.json"), "--out", str(model)]) == 0  # fmt: skip
+    capsys.readouterr()
+    assert main(["sample", "--model", str(model), "--lines", "4", "--seed", "5"]) == 0
+    captured = capsys.readouterr()
+    assert len(captured.out.strip().splitlines()) == 4
+    assert "0 rule violations" in captured.err
+    assert main(["sample", "--model", str(model), "--prompt", "quá ngắn"]) == 2
+    assert main(["evaluate", "--model", str(model), "--corpus", str(corpus)]) == 0
+    assert '"val_syllable_ppl"' in capsys.readouterr().out
     svg = tmp_path / "loss.svg"
     assert main(["plot", "--log", str(tmp_path / "run" / "log.csv"), "--out", str(svg)]) == 0
     assert svg.read_text(encoding="utf-8").startswith("<svg")
