@@ -92,8 +92,7 @@ def cmd_plot(args: argparse.Namespace) -> int:
 
     svg = render_loss_svg(read_log(args.log), title=args.title, subtitle=args.subtitle)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_text(svg, encoding="utf-8", newline="
-")
+    Path(args.out).write_text(svg, encoding="utf-8", newline="\n")
     print(f"wrote {args.out}")
     return 0
 
