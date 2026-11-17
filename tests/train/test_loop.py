@@ -54,6 +54,9 @@ def test_training_lowers_loss_and_writes_outputs(tiny_corpus: Path, tmp_path: Pa
     assert [int(r["step"]) for r in evals] == [10, 20, 30]
     assert result.steps == 30
     assert result.best_step in (10, 20, 30)
+    saved = json.loads((out / "config.json").read_text(encoding="utf-8"))
+    assert saved["train"]["steps"] == 30
+    assert saved["model"]["vocab_size"] > 100
     for name in ("best.npz", "last.npz", "tokenizer.json"):
         assert (out / name).exists()
     assert load_checkpoint(out / "best.npz").step == result.best_step
