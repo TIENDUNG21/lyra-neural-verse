@@ -30,7 +30,14 @@ from lyra.text.features import token_features
 from lyra.text.tokenizer import Tokenizer
 from lyra.train.corpus import load_corpus
 from lyra.train.csvlog import CsvLogger
-from lyra.train.data import BatchSampler, IntArray, encode_blocks, eval_windows, split_blocks
+from lyra.train.data import (
+    BatchSampler,
+    IntArray,
+    encode_blocks,
+    eval_windows,
+    split_blocks,
+    unigram_log_prior,
+)
 
 LOG_FIELDS = (
     "step",
@@ -143,6 +150,7 @@ def train(
     val_tokens = encode_blocks(split.val, tokenizer)
     model_cfg = ModelConfig(vocab_size=tokenizer.vocab_size, **model_options)
     model = LyraLM(model_cfg, token_features(tokenizer.vocab))
+    model.head_bias.data = unigram_log_prior(train_tokens, tokenizer.vocab_size)
     optimizer = AdamW(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
     rng = np.random.default_rng(config.seed)
     sampler = BatchSampler(

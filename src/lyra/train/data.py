@@ -91,6 +91,17 @@ class BatchSampler:
         return x, y
 
 
+def unigram_log_prior(tokens: IntArray, vocab_size: int, alpha: float = 0.5) -> NDArray[np.float32]:
+    """Centered log of add-``alpha`` smoothed token frequencies.
+
+    Used to initialize the output bias, so training starts from the unigram
+    distribution instead of spending its first steps learning frequencies.
+    """
+    counts = np.bincount(tokens, minlength=vocab_size).astype(np.float64)
+    logp = np.log((counts + alpha) / (counts.sum() + alpha * vocab_size))
+    return np.asarray(logp - logp.mean(), dtype=np.float32)
+
+
 def eval_windows(
     tokens: IntArray, block_size: int, *, skip_markers: bool = False
 ) -> Iterator[tuple[IntArray, IntArray]]:

@@ -7,7 +7,13 @@ import pytest
 
 from lyra.text.tokenizer import LINE6, LINE8, UNK, Tokenizer
 from lyra.train.corpus import load_corpus
-from lyra.train.data import BatchSampler, encode_blocks, eval_windows, split_blocks
+from lyra.train.data import (
+    BatchSampler,
+    encode_blocks,
+    eval_windows,
+    split_blocks,
+    unigram_log_prior,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 KIEU = load_corpus(ROOT / "data" / "truyen-kieu.txt")
@@ -80,3 +86,11 @@ def test_eval_windows_can_skip_marker_targets() -> None:
     tokens = np.array([LINE6, 5, 6, 7, LINE8, 8, 9], dtype=np.int64)
     scored = [int(t) for _, y in eval_windows(tokens, 4, skip_markers=True) for t in y[y >= 0]]
     assert scored == [5, 6, 7, 8, 9]
+
+
+def test_unigram_log_prior_orders_tokens_by_frequency() -> None:
+    prior = unigram_log_prior(np.array([5, 5, 5, 6], dtype=np.int64), 8)
+    assert prior.shape == (8,)
+    assert prior[5] > prior[6] > prior[0]
+    assert prior[0] == prior[7]
+    assert abs(float(prior.mean())) < 1e-6
