@@ -18,7 +18,7 @@ runs/scratch/
 # Web
 web/node_modules/
 web/dist/
-web/public/model/
+web/public/
 
 # Editors / OS
 .vscode/
