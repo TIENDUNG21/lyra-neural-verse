@@ -275,6 +275,67 @@ class Tensor:
         count = int(np.prod([self.shape[a] for a in axes])) if axes else 1
         return self.sum(axis=axes, keepdims=keepdims) * (1.0 / count)
 
+    # ----------------------------------------------------------------- matmul
+    def __matmul__(self, other: TensorLike) -> Tensor:
+        o = as_tensor(other, self.dtype)
+        a, b = self.data, o.data
+        if a.ndim < 2 or b.ndim < 2:
+            raise ValueError("matmul operands must be at least 2-D")
+
+        def grad_fn(g: Array) -> tuple[Array, Array]:
+            grad_a = unbroadcast(g @ np.swapaxes(b, -1, -2), a.shape)
+            if b.ndim == 2:
+                # Common case x(..., k) @ W(k, n): fold the batch into one GEMM.
+                grad_b = a.reshape(-1, a.shape[-1]).T @ g.reshape(-1, g.shape[-1])
+            else:
+                grad_b = unbroadcast(np.swapaxes(a, -1, -2) @ g, b.shape)
+            return grad_a, grad_b
+
+        return Tensor.make(a @ b, (self, o), grad_fn, "matmul")
+
+    def __rmatmul__(self, other: TensorLike) -> Tensor:
+        return as_tensor(other, self.dtype) @ self
+
+    # ------------------------------------------------------------ shape ops
+    def reshape(self, *shape: int) -> Tensor:
+        original = self.shape
+        return Tensor.make(
+            self.data.reshape(shape), (self,), lambda g: (g.reshape(original),), "reshape"
+        )
+
+    def transpose(self, *axes: int) -> Tensor:
+        order = tuple(axes) if axes else tuple(reversed(range(self.ndim)))
+        inverse = tuple(int(i) for i in np.argsort(order))
+        return Tensor.make(
+            self.data.transpose(order), (self,), lambda g: (g.transpose(inverse),), "transpose"
+        )
+
+    def swapaxes(self, axis1: int, axis2: int) -> Tensor:
+        return Tensor.make(
+            np.swapaxes(self.data, axis1, axis2),
+            (self,),
+            lambda g: (np.swapaxes(g, axis1, axis2),),
+            "swapaxes",
+        )
+
+    @property
+    def T(self) -> Tensor:  # noqa: N802 - NumPy naming
+        return self.transpose()
+
+    def __getitem__(self, index: Index) -> Tensor:
+        shape, dtype = self.shape, self.dtype
+        basic = _is_basic_index(index)
+
+        def grad_fn(g: Array) -> tuple[Array]:
+            full = np.zeros(shape, dtype=dtype)
+            if basic:
+                full[index] = g
+            else:
+                np.add.at(full, index, g)
+            return (full,)
+
+        return Tensor.make(self.data[index], (self,), grad_fn, "getitem")
+
 
 TensorLike: TypeAlias = Tensor | float | int | Array
 
