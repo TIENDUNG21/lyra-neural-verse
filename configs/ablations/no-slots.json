@@ -1,0 +1,24 @@
+{
+  "model": {
+    "block_size": 128,
+    "d_model": 128,
+    "n_layers": 4,
+    "n_heads": 4,
+    "dropout": 0.2,
+    "seed": 7,
+    "phonology_embeddings": true,
+    "slot_embeddings": false
+  },
+  "train": {
+    "steps": 500,
+    "batch_size": 16,
+    "lr": 0.001,
+    "min_lr": 3e-05,
+    "warmup_steps": 50,
+    "weight_decay": 0.1,
+    "token_dropout": 0.1,
+    "eval_every": 25,
+    "log_every": 25,
+    "seed": 1234
+  }
+}
