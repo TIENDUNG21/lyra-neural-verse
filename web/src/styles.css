@@ -1,0 +1,329 @@
+:root {
+  --bg: #0a0a0a;
+  --surface: #131313;
+  --line: #262626;
+  --text: #ededed;
+  --muted: #a3a3a3;
+  --accent: #f5b942;
+  --accent-soft: rgba(245, 185, 66, 0.14);
+  --bad: #ff8a7a;
+  --sans: "Inter", "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  --mono: "JetBrains Mono", "Cascadia Code", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px / 1.6 var(--sans);
+}
+
+a {
+  color: var(--accent);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 24px 8px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.tagline {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+
+.repo {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 24px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 24px;
+}
+
+@media (max-width: 860px) {
+  main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 22px 22px;
+}
+
+h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.hint {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.controls .wide {
+  grid-column: 1 / -1;
+}
+
+.controls .check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding-top: 18px;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: var(--text);
+}
+
+input[type="number"],
+input[type="text"],
+select,
+textarea {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: var(--sans);
+  line-height: 1.7;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+input[type="range"] {
+  accent-color: var(--accent);
+}
+
+.actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #111;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.status {
+  margin: 16px 0 8px;
+  min-height: 1.4em;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.status.error {
+  color: var(--bad);
+}
+
+.poem {
+  margin: 0;
+  min-height: 180px;
+  padding: 18px 20px;
+  border-left: 2px solid var(--accent);
+  background: var(--bg);
+  border-radius: 0 8px 8px 0;
+}
+
+.poem .line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 9px;
+  margin: 0 0 14px;
+  opacity: 0;
+  animation: rise 0.6s ease forwards;
+}
+
+.poem .line.eight {
+  padding-left: 0;
+}
+
+.poem .line.six {
+  padding-left: 1.6em;
+}
+
+.poem .from-prompt .word {
+  color: var(--muted);
+}
+
+.word {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 19px;
+  line-height: 1.3;
+}
+
+.word .mark {
+  font: 10px / 1.2 var(--mono);
+  color: var(--muted);
+  min-height: 1.2em;
+}
+
+.word.rhyme > span:first-child {
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent);
+}
+
+.poem figcaption {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.legend {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+
+.key {
+  font-family: var(--mono);
+  padding: 0 4px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+
+.key-r {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.checker {
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.checker .row {
+  display: grid;
+  grid-template-columns: 2.2em 6.4em minmax(0, 1fr);
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.checker .num,
+.checker .pattern {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  padding-top: 2px;
+}
+
+.checker .problems {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--bad);
+}
+
+.checker .ok {
+  margin-top: 12px;
+  color: var(--accent);
+}
+
+footer {
+  max-width: 1120px;
+  margin: 8px auto 40px;
+  padding: 0 24px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poem .line {
+    animation: none;
+    opacity: 1;
+  }
+}

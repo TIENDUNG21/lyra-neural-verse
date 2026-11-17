@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lyra Neural Verse</title>
+    <meta
+      name="description"
+      content="A language model built from first principles that writes Vietnamese lục bát verse, running in your browser."
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <img src="/logo.svg" alt="" width="36" height="36" />
+        <div>
+          <h1>Lyra Neural Verse</h1>
+          <p class="tagline">A language model built from first principles that writes Vietnamese verse.</p>
+        </div>
+      </div>
+      <a class="repo" href="https://github.com/TIENDUNG21/lyra-neural-verse">Source on GitHub</a>
+    </header>
+
+    <main>
+      <section class="panel" aria-labelledby="write-title">
+        <h2 id="write-title">Write</h2>
+        <p class="hint">
+          A small transformer trained on <em>Truyện Kiều</em> picks each syllable; a constrained decoder
+          only lets it pick syllables that keep the lục bát tone and rhyme rules.
+        </p>
+        <form id="controls" class="controls">
+          <label>Lines
+            <select name="lines">
+              <option>2</option><option selected>4</option><option>6</option><option>8</option><option>12</option>
+            </select>
+          </label>
+          <label>Seed <input name="seed" type="number" min="0" max="4294967295" value="7" /></label>
+          <label>Temperature <output name="tOut">0.9</output>
+            <input name="temperature" type="range" min="0" max="1.5" step="0.05" value="0.9" />
+          </label>
+          <label>Top-k <input name="topK" type="number" min="0" max="500" value="40" /></label>
+          <label>Top-p <input name="topP" type="number" min="0.05" max="1" step="0.05" value="0.95" /></label>
+          <label class="check"><input name="strict" type="checkbox" /> Exact rhymes only</label>
+          <label class="wide">First line (optional, 6 syllables)
+            <input name="prompt" type="text" placeholder="Trăm năm trong cõi người ta" autocomplete="off" />
+          </label>
+          <div class="actions">
+            <button type="submit" id="write">Write a poem</button>
+            <button type="button" id="shuffle" class="secondary">New seed</button>
+          </div>
+        </form>
+        <div id="status" class="status" role="status">Loading the model...</div>
+        <figure id="poem" class="poem" aria-live="polite"></figure>
+        <p class="legend">
+          <span class="key key-b">B</span> bằng and <span class="key key-t">T</span> trắc mark the
+          positions the rules constrain; <span class="key key-r">rhyme</span> marks rhyming syllables.
+          Hover a syllable for its probability among the syllables the rules allowed.
+        </p>
+      </section>
+
+      <section class="panel" aria-labelledby="check-title">
+        <h2 id="check-title">Check</h2>
+        <p class="hint">Paste lục bát (one line per row, or separated by "/") to check tones and rhymes.</p>
+        <textarea id="checker-input" rows="6" spellcheck="false">Trăm năm trong cõi người ta,
+Chữ tài chữ mệnh khéo là ghét nhau.
+Trải qua một cuộc bể dâu,
+Những điều trông thấy mà đau đớn lòng.</textarea>
+        <div id="checker-output" class="checker"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p id="model-info"></p>
+      <p>Everything runs in your browser: the int8 model file, the forward pass and the decoder. No server, no tracking.</p>
+    </footer>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
