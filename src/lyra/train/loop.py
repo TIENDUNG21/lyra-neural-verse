@@ -153,7 +153,8 @@ def train(
     val_tokens = encode_blocks(split.val, tokenizer)
     model_cfg = ModelConfig(vocab_size=tokenizer.vocab_size, **model_options)
     resolved = {"model": model_cfg.to_dict(), "train": config.to_dict()}
-    (out / "config.json").write_text(json.dumps(resolved, indent=2) + "\n", encoding="utf-8")
+    text = json.dumps(resolved, indent=2) + "\n"
+    (out / "config.json").write_text(text, encoding="utf-8", newline="\n")
     model = LyraLM(model_cfg, token_features(tokenizer.vocab))
     model.head_bias.data = unigram_log_prior(train_tokens, tokenizer.vocab_size)
     optimizer = AdamW(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)

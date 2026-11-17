@@ -108,7 +108,7 @@ class Tokenizer:
         return cls(data["vocab"])
 
     def save(self, path: str | Path) -> None:
-        Path(path).write_text(self.to_json(), encoding="utf-8")
+        Path(path).write_text(self.to_json(), encoding="utf-8", newline="\n")
 
     @classmethod
     def load(cls, path: str | Path) -> Tokenizer:
