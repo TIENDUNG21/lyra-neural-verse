@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lyra-neural-verse"
-version = "0.1.0"
+version = "1.0.0"
 description = "A language model built from first principles that writes Vietnamese verse."
 readme = "README.md"
 license = "MIT"
