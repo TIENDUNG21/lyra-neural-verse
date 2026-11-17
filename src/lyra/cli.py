@@ -143,7 +143,14 @@ def cmd_export(args: argparse.Namespace) -> int:
     model = LyraLM(ModelConfig.from_dict(ckpt.config), token_features(tokenizer.vocab))
     model.load_state_dict(ckpt.params)
     config, state = model.folded_state_dict()
-    metadata = {"step": ckpt.step, "parameters": model.num_parameters(), **ckpt.extra}
+    # Folding removes the onset/rhyme/tone tables, so the released model is smaller
+    # than the one that was trained; record both counts.
+    metadata = {
+        "step": ckpt.step,
+        "parameters": sum(int(v.size) for v in state.values()),
+        "training_parameters": model.num_parameters(),
+        **ckpt.extra,
+    }
     size = write_model_file(
         args.out, params=state, config=config, vocab=list(tokenizer.vocab), metadata=metadata
     )
