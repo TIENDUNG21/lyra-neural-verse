@@ -56,13 +56,13 @@ def test_embeddings_are_tied_with_the_output_head() -> None:
     model = LyraLM(tiny_config())
     names = [name for name, _ in model.named_parameters()]
     assert names.count("tok_emb.weight") == 1
-    assert not any(name.startswith("head") for name in names)
+    assert not any(name.startswith("head") and name != "head_bias" for name in names)
     cfg = tiny_config()
     d, v, t, layers = cfg.d_model, cfg.vocab_size, cfg.block_size, cfg.n_layers
     per_block = (
         2 * 2 * d + (d * 3 * d + 3 * d) + (d * d + d) + (d * 4 * d + 4 * d) + (4 * d * d + d)
     )
-    assert model.num_parameters() == v * d + t * d + layers * per_block + 2 * d
+    assert model.num_parameters() == v * d + t * d + layers * per_block + 2 * d + v
 
 
 def test_model_is_causal() -> None:

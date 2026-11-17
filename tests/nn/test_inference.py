@@ -70,3 +70,11 @@ def test_reset_and_invalid_input(model: LyraLM) -> None:
         engine.feed([])
     with pytest.raises(ValueError, match="out of range"):
         engine.feed([13])
+
+
+def test_logits_all_matches_every_position(model: LyraLM) -> None:
+    tokens = [2, 9, 4, 4, 11, 3]
+    engine = InferenceEngine(CFG, model.state_dict())
+    np.testing.assert_allclose(engine.logits_all(tokens), reference(model, tokens), atol=1e-5)
+    with pytest.raises(ValueError, match="block_size"):
+        engine.logits_all([1] * 9)

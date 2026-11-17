@@ -14,7 +14,7 @@ from lyra.autograd import Tensor
 from lyra.autograd import functional as F
 from lyra.nn.attention import CausalSelfAttention
 from lyra.nn.layers import Dropout, Embedding, LayerNorm, Linear
-from lyra.nn.module import Module, ModuleList
+from lyra.nn.module import Module, ModuleList, Parameter
 from lyra.text.features import TokenFeatures
 
 
@@ -114,6 +114,9 @@ class LyraLM(Module):
         self.drop = Dropout(cfg.dropout, rng=rng)
         self.blocks = ModuleList(Block(cfg, rng) for _ in range(cfg.n_layers))
         self.ln_f = LayerNorm(cfg.d_model)
+        # Output bias: lets the model learn the unigram prior directly instead of
+        # encoding it in dot products with the tied embedding table.
+        self.head_bias = Parameter(np.zeros(cfg.vocab_size, dtype=np.float32))
 
     def token_table(self) -> Tensor:
         """The (vocab, d_model) embedding table used for input and output."""
@@ -157,7 +160,7 @@ class LyraLM(Module):
         x = self.ln_f.forward(x)
         if last_only:
             x = x[:, -1:]
-        return x @ table.T
+        return x @ table.T + self.head_bias
 
     def loss(self, ids: NDArray[np.integer[Any]], targets: NDArray[np.integer[Any]]) -> Tensor:
         """Mean next-token cross-entropy; targets equal to -1 are ignored."""

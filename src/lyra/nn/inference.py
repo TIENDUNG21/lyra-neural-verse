@@ -82,7 +82,14 @@ class InferenceEngine:
         assert logits is not None
         return logits
 
-    def _forward(self, chunk: Sequence[int]) -> FloatArray:
+    def logits_all(self, tokens: Sequence[int]) -> FloatArray:
+        """Logits at every position of ``tokens`` (a fresh context, no overflow)."""
+        if not tokens or len(tokens) > self.config.block_size:
+            raise ValueError("logits_all needs 1..block_size tokens")
+        self.reset()
+        return self._forward(tokens, all_positions=True)
+
+    def _forward(self, chunk: Sequence[int], all_positions: bool = False) -> FloatArray:
         ids = np.asarray(chunk, dtype=np.int64)
         if int(np.min(ids)) < 0 or int(np.max(ids)) >= self.config.vocab_size:
             raise ValueError("token id out of range")
@@ -112,6 +119,10 @@ class InferenceEngine:
             h = _gelu(h @ w[p + "mlp.fc.weight"] + w[p + "mlp.fc.bias"])
             x = x + (h @ w[p + "mlp.proj.weight"] + w[p + "mlp.proj.bias"])
         self.tokens.extend(int(t) for t in ids)
+        if all_positions:
+            final = _layer_norm(x, w["ln_f.weight"], w["ln_f.bias"])
+            all_logits = final @ w["tok_emb.weight"].T + w["head_bias"]
+            return cast(FloatArray, all_logits.astype(np.float32))
         last = _layer_norm(x[-1], w["ln_f.weight"], w["ln_f.bias"])
-        logits: FloatArray = (w["tok_emb.weight"] @ last).astype(np.float32)
+        logits: FloatArray = (w["tok_emb.weight"] @ last + w["head_bias"]).astype(np.float32)
         return logits
