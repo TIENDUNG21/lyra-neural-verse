@@ -86,6 +86,18 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 0 if report.ok else 1
 
 
+def cmd_plot(args: argparse.Namespace) -> int:
+    from lyra.train.csvlog import read_log
+    from lyra.train.plot import render_loss_svg
+
+    svg = render_loss_svg(read_log(args.log), title=args.title, subtitle=args.subtitle)
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.out).write_text(svg, encoding="utf-8", newline="
+")
+    print(f"wrote {args.out}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="lyra", description="A NumPy language model that writes Vietnamese lục bát verse."
@@ -107,6 +119,13 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--waivers", type=Path, default=None, help="TSV of documented exceptions")
     check.add_argument("--quiet", action="store_true", help="only print problems and a summary")
     check.set_defaults(func=cmd_check)
+
+    plot = commands.add_parser("plot", help="render a training log as an SVG loss curve")
+    plot.add_argument("--log", type=Path, required=True, help="log.csv written by lyra train")
+    plot.add_argument("--out", type=Path, required=True, help="SVG file to write")
+    plot.add_argument("--title", default="Lyra training loss")
+    plot.add_argument("--subtitle", default="Cross-entropy per token on Truyện Kiều")
+    plot.set_defaults(func=cmd_plot)
     return parser
 
 

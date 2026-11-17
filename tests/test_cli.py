@@ -66,6 +66,9 @@ def test_train_command_end_to_end(tmp_path: Path, capsys: pytest.CaptureFixture[
     assert code == 0
     assert "done: 4 steps" in capsys.readouterr().out
     assert (tmp_path / "run" / "best.npz").exists()
+    svg = tmp_path / "loss.svg"
+    assert main(["plot", "--log", str(tmp_path / "run" / "log.csv"), "--out", str(svg)]) == 0
+    assert svg.read_text(encoding="utf-8").startswith("<svg")
 
 
 def test_unknown_command_exits_with_usage() -> None:
