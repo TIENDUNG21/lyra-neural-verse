@@ -1,0 +1,28 @@
+{
+  "name": "lyra-playground",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Browser playground for Lyra Neural Verse: the same model and constrained decoder in TypeScript.",
+  "license": "MIT",
+  "scripts": {
+    "copy-model": "node scripts/copy-model.mjs",
+    "predev": "npm run copy-model",
+    "dev": "vite --port 5110 --strictPort",
+    "prebuild": "npm run copy-model",
+    "build": "tsc --noEmit && vite build && node scripts/check-base.mjs",
+    "preview": "vite preview --port 5111 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "pretest": "npm run copy-model",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "^22.10.0",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}
