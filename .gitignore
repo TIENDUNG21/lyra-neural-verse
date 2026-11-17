@@ -25,3 +25,4 @@ web/public/
 .idea/
 Thumbs.db
 .DS_Store
+runs/*/tokenizer.json

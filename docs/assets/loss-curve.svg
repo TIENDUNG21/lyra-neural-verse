@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="440" viewBox="0 0 840 440" role="img" aria-labelledby="t d" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<title id="t">Training Lyra on Truyện Kiều</title>
+<desc id="d">Cross-entropy per token, 1.14M parameters, 6 CPU threads (Intel i7-14700K) Final train loss 4.060; best validation loss 5.380 at step 275.</desc>
+<rect width="840" height="440" rx="12" fill="#0a0a0a"/>
+<text x="64" y="34" fill="#ededed" font-size="18" font-weight="600">Training Lyra on Truyện Kiều</text>
+<text x="64" y="56" fill="#a3a3a3" font-size="13">Cross-entropy per token, 1.14M parameters, 6 CPU threads (Intel i7-14700K)</text>
+<line x1="64" y1="388.0" x2="720" y2="388.0" stroke="#262626"/>
+<text x="54" y="392.0" fill="#a3a3a3" font-size="12" text-anchor="end">4</text>
+<line x1="64" y1="327.2" x2="720" y2="327.2" stroke="#262626"/>
+<text x="54" y="331.2" fill="#a3a3a3" font-size="12" text-anchor="end">4.5</text>
+<line x1="64" y1="266.4" x2="720" y2="266.4" stroke="#262626"/>
+<text x="54" y="270.4" fill="#a3a3a3" font-size="12" text-anchor="end">5</text>
+<line x1="64" y1="205.6" x2="720" y2="205.6" stroke="#262626"/>
+<text x="54" y="209.6" fill="#a3a3a3" font-size="12" text-anchor="end">5.5</text>
+<line x1="64" y1="144.8" x2="720" y2="144.8" stroke="#262626"/>
+<text x="54" y="148.8" fill="#a3a3a3" font-size="12" text-anchor="end">6</text>
+<line x1="64" y1="84.0" x2="720" y2="84.0" stroke="#262626"/>
+<text x="54" y="88.0" fill="#a3a3a3" font-size="12" text-anchor="end">6.5</text>
+<text x="64.0" y="410" fill="#a3a3a3" font-size="12" text-anchor="middle">0</text>
+<text x="195.2" y="410" fill="#a3a3a3" font-size="12" text-anchor="middle">100</text>
+<text x="326.4" y="410" fill="#a3a3a3" font-size="12" text-anchor="middle">200</text>
+<text x="457.6" y="410" fill="#a3a3a3" font-size="12" text-anchor="middle">300</text>
+<text x="588.8" y="410" fill="#a3a3a3" font-size="12" text-anchor="middle">400</text>
+<text x="720.0" y="410" fill="#a3a3a3" font-size="12" text-anchor="middle">500</text>
+<text x="392.0" y="430" fill="#a3a3a3" font-size="12" text-anchor="middle">training step</text>
+<text transform="translate(18 236.0) rotate(-90)" fill="#a3a3a3" font-size="12" text-anchor="middle">loss (nats / token)</text>
+<polyline data-series="train" points="96.8,123.2 129.6,189.0 162.4,215.9 195.2,232.3 228.0,257.7 260.8,273.8 293.6,290.8 326.4,304.4 359.2,317.9 392.0,328.1 424.8,340.7 457.6,352.1 490.4,361.1 523.2,364.2 556.0,369.1 588.8,371.4 621.6,376.2 654.4,380.0 687.2,382.4 720.0,380.7" fill="none" stroke="#3987e5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="730.0" y="384.7" fill="#ededed" font-size="12">train 4.06</text>
+<polyline data-series="validation" points="96.8,170.1 129.6,183.3 162.4,194.0 195.2,201.6 228.0,206.2 260.8,210.6 293.6,214.9 326.4,218.5 359.2,218.7 392.0,219.6 424.8,220.2 457.6,218.1 490.4,218.3 523.2,219.2 556.0,218.5 588.8,219.1 621.6,218.6 654.4,219.4 687.2,219.2 720.0,219.0" fill="none" stroke="#bf8a22" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="730.0" y="223.0" fill="#ededed" font-size="12">validation 5.39</text>
+<circle cx="96.8" cy="170.1" r="7" fill="transparent"><title>step 25: validation loss 5.792</title></circle>
+<circle cx="129.6" cy="183.3" r="7" fill="transparent"><title>step 50: validation loss 5.683</title></circle>
+<circle cx="162.4" cy="194.0" r="7" fill="transparent"><title>step 75: validation loss 5.596</title></circle>
+<circle cx="195.2" cy="201.6" r="7" fill="transparent"><title>step 100: validation loss 5.533</title></circle>
+<circle cx="228.0" cy="206.2" r="7" fill="transparent"><title>step 125: validation loss 5.495</title></circle>
+<circle cx="260.8" cy="210.6" r="7" fill="transparent"><title>step 150: validation loss 5.459</title></circle>
+<circle cx="293.6" cy="214.9" r="7" fill="transparent"><title>step 175: validation loss 5.424</title></circle>
+<circle cx="326.4" cy="218.5" r="7" fill="transparent"><title>step 200: validation loss 5.394</title></circle>
+<circle cx="359.2" cy="218.7" r="7" fill="transparent"><title>step 225: validation loss 5.392</title></circle>
+<circle cx="392.0" cy="219.6" r="7" fill="transparent"><title>step 250: validation loss 5.385</title></circle>
+<circle cx="424.8" cy="220.2" r="7" fill="transparent"><title>step 275: validation loss 5.380</title></circle>
+<circle cx="457.6" cy="218.1" r="7" fill="transparent"><title>step 300: validation loss 5.397</title></circle>
+<circle cx="490.4" cy="218.3" r="7" fill="transparent"><title>step 325: validation loss 5.395</title></circle>
+<circle cx="523.2" cy="219.2" r="7" fill="transparent"><title>step 350: validation loss 5.388</title></circle>
+<circle cx="556.0" cy="218.5" r="7" fill="transparent"><title>step 375: validation loss 5.394</title></circle>
+<circle cx="588.8" cy="219.1" r="7" fill="transparent"><title>step 400: validation loss 5.389</title></circle>
+<circle cx="621.6" cy="218.6" r="7" fill="transparent"><title>step 425: validation loss 5.393</title></circle>
+<circle cx="654.4" cy="219.4" r="7" fill="transparent"><title>step 450: validation loss 5.387</title></circle>
+<circle cx="687.2" cy="219.2" r="7" fill="transparent"><title>step 475: validation loss 5.388</title></circle>
+<circle cx="720.0" cy="219.0" r="7" fill="transparent"><title>step 500: validation loss 5.389</title></circle>
+<circle data-best="1" cx="424.8" cy="220.2" r="5" fill="#bf8a22" stroke="#0a0a0a" stroke-width="2"/>
+<text x="424.8" y="242.2" fill="#ededed" font-size="12" text-anchor="middle">best 5.38 at step 275</text>
+<line x1="530" y1="70" x2="548" y2="70" stroke="#3987e5" stroke-width="2" stroke-linecap="round"/>
+<text x="554" y="74" fill="#a3a3a3" font-size="12">train</text>
+<line x1="630" y1="70" x2="648" y2="70" stroke="#bf8a22" stroke-width="2" stroke-linecap="round"/>
+<text x="654" y="74" fill="#a3a3a3" font-size="12">validation</text>
+</svg>

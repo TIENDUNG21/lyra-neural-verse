@@ -1,0 +1,7 @@
+{
+  "val_ppl": 217.072,
+  "val_syllable_ppl": 466.912,
+  "unigram": 1082.002,
+  "bigram": 567.056,
+  "bigram_lambda": 0.3
+}
