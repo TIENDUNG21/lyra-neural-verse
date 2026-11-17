@@ -44,7 +44,7 @@ def test_wrong_tone_is_reported_with_line_and_position() -> None:
     assert report.ok
     bad = check_poem("Trăm năm trong ngày người ta\nChữ tài chữ mệnh khéo là ghét nhau")
     assert rules(bad.violations) == [(1, "tone", 4)]
-    assert "should be trắc" in bad.violations[0].message
+    assert bad.violations[0].message == "'ngày' (huyền) should be trắc"
 
 
 def test_huyen_ngang_contrast_on_the_eight_line() -> None:

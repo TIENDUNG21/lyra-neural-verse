@@ -187,7 +187,7 @@ def _check_line(report: LineReport) -> list[Violation]:
                     report.number,
                     Rule.TONE,
                     position,
-                    f"'{word}' ({syllable.tone.name.lower()}) should be {want}",
+                    f"'{word}' ({syllable.tone.label}) should be {want}",
                 )
             )
     if report.expected_length == 8:

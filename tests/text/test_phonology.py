@@ -35,6 +35,7 @@ def test_tone_detection(word: str, tone: Tone) -> None:
 
 def test_bang_and_trac_classes() -> None:
     assert {t for t in Tone if t.is_bang} == {Tone.NGANG, Tone.HUYEN}
+    assert [t.label for t in Tone] == ["ngang", "huyền", "sắc", "hỏi", "ngã", "nặng"]
 
 
 def test_split_tone_returns_bare_syllable() -> None:

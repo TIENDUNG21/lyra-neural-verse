@@ -42,6 +42,11 @@ class Tone(Enum):
     def mark(self) -> str:
         return _TONE_TO_MARK.get(self, "")
 
+    @property
+    def label(self) -> str:
+        """Vietnamese name of the tone, e.g. ``huyền``."""
+        return ("ngang", "huyền", "sắc", "hỏi", "ngã", "nặng")[self.value]
+
 
 _MARK_TO_TONE = {
     "̀": Tone.HUYEN,

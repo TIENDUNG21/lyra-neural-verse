@@ -119,7 +119,7 @@ def cmd_sample(args: argparse.Namespace) -> int:
             return 2
         if index:
             print()
-        print(poem.text())
+        print(poem.text(), flush=True)
         report = check_lines([line.text() for line in poem.lines])
         exact = sum(1 for r in report.rhymes if r.match.name == "EXACT")
         relaxed = sum(1 for line in poem.lines if line.relaxed)
