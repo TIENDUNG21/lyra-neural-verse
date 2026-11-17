@@ -16,6 +16,7 @@ from lyra.nn.attention import CausalSelfAttention
 from lyra.nn.layers import Dropout, Embedding, LayerNorm, Linear
 from lyra.nn.module import Module, ModuleList, Parameter
 from lyra.text.features import TokenFeatures
+from lyra.text.slots import N_SLOTS, line_slots
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,7 @@ class ModelConfig:
     dropout: float = 0.1
     seed: int = 0
     phonology_embeddings: bool = False
+    slot_embeddings: bool = False
 
     def __post_init__(self) -> None:
         if self.d_model % self.n_heads != 0:
@@ -111,6 +113,8 @@ class LyraLM(Module):
             self.rhyme_emb = Embedding(features.n_rhymes, cfg.d_model, rng=rng)
             self.tone_emb = Embedding(features.n_tones, cfg.d_model, rng=rng)
         self.pos_emb = Embedding(cfg.block_size, cfg.d_model, rng=rng)
+        if cfg.slot_embeddings:
+            self.slot_emb = Embedding(N_SLOTS, cfg.d_model, rng=rng)
         self.drop = Dropout(cfg.dropout, rng=rng)
         self.blocks = ModuleList(Block(cfg, rng) for _ in range(cfg.n_layers))
         self.ln_f = LayerNorm(cfg.d_model)
@@ -141,8 +145,17 @@ class LyraLM(Module):
             del state[name]
         return dataclasses.replace(self.config, phonology_embeddings=False), state
 
-    def forward(self, ids: NDArray[np.integer[Any]], last_only: bool = False) -> Tensor:
-        """Return logits of shape ``(B, T, vocab)`` (or ``(B, 1, vocab)`` if ``last_only``)."""
+    def forward(
+        self,
+        ids: NDArray[np.integer[Any]],
+        slots: NDArray[np.integer[Any]] | None = None,
+        last_only: bool = False,
+    ) -> Tensor:
+        """Return logits of shape ``(B, T, vocab)`` (or ``(B, 1, vocab)`` if ``last_only``).
+
+        ``slots`` (same shape as ``ids``) are the line slots of the tokens; when
+        omitted they are computed from each row on its own.
+        """
         ids = np.asarray(ids)
         if ids.ndim != 2:
             raise ValueError("ids must have shape (batch, time)")
@@ -153,6 +166,10 @@ class LyraLM(Module):
             )
         table = self.token_table()
         x = F.embedding(table, ids) + self.pos_emb.forward(np.arange(seq_len))
+        if self.config.slot_embeddings:
+            if slots is None:
+                slots = np.stack([line_slots(row) for row in ids])
+            x = x + self.slot_emb.forward(np.asarray(slots))
         x = self.drop.forward(x)
         for block in self.blocks:
             assert isinstance(block, Block)
@@ -162,6 +179,11 @@ class LyraLM(Module):
             x = x[:, -1:]
         return x @ table.T + self.head_bias
 
-    def loss(self, ids: NDArray[np.integer[Any]], targets: NDArray[np.integer[Any]]) -> Tensor:
+    def loss(
+        self,
+        ids: NDArray[np.integer[Any]],
+        targets: NDArray[np.integer[Any]],
+        slots: NDArray[np.integer[Any]] | None = None,
+    ) -> Tensor:
         """Mean next-token cross-entropy; targets equal to -1 are ignored."""
-        return F.cross_entropy(self.forward(ids), targets, ignore_index=-1)
+        return F.cross_entropy(self.forward(ids, slots), targets, ignore_index=-1)

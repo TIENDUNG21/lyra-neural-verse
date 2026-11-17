@@ -24,6 +24,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from lyra.nn.transformer import ModelConfig
+from lyra.text.slots import SlotState, line_slots, next_slot
 
 FloatArray = NDArray[np.float32]
 _GELU_C = math.sqrt(2.0 / math.pi)
@@ -49,6 +50,8 @@ class InferenceEngine:
         self.n_heads = config.n_heads
         self.head_dim = config.d_model // config.n_heads
         self.tokens: list[int] = []
+        self.slots: list[int] = []
+        self.slot_state = SlotState()
         self._k: list[FloatArray] = []
         self._v: list[FloatArray] = []
         self.reset()
@@ -56,6 +59,8 @@ class InferenceEngine:
     def reset(self) -> None:
         """Forget the context."""
         self.tokens = []
+        self.slots = []
+        self.slot_state = SlotState()
         shape = (self.n_heads, 0, self.head_dim)
         self._k = [np.zeros(shape, np.float32) for _ in range(self.config.n_layers)]
         self._v = [np.zeros(shape, np.float32) for _ in range(self.config.n_layers)]
@@ -70,26 +75,39 @@ class InferenceEngine:
             raise ValueError("feed() needs at least one token")
         logits: FloatArray | None = None
         pending = list(tokens)
+        new_slots = []
+        for token in pending:
+            slot, self.slot_state = next_slot(self.slot_state, int(token))
+            new_slots.append(slot)
         while pending:
             room = self.config.block_size - self.length
             if room == 0:
-                keep = self.tokens[-(self.config.block_size // 2) :]
+                half = self.config.block_size // 2
+                keep, keep_slots, state = self.tokens[-half:], self.slots[-half:], self.slot_state
                 self.reset()
-                self._forward(keep)
+                self.slot_state = state
+                self._forward(keep, keep_slots)
                 room = self.config.block_size - self.length
             chunk, pending = pending[:room], pending[room:]
-            logits = self._forward(chunk)
+            chunk_slots, new_slots = new_slots[:room], new_slots[room:]
+            logits = self._forward(chunk, chunk_slots)
         assert logits is not None
         return logits
 
-    def logits_all(self, tokens: Sequence[int]) -> FloatArray:
-        """Logits at every position of ``tokens`` (a fresh context, no overflow)."""
+    def logits_all(self, tokens: Sequence[int], slots: Sequence[int] | None = None) -> FloatArray:
+        """Logits at every position of ``tokens`` (a fresh context, no overflow).
+
+        ``slots`` default to the slots of ``tokens`` read on their own.
+        """
         if not tokens or len(tokens) > self.config.block_size:
             raise ValueError("logits_all needs 1..block_size tokens")
         self.reset()
-        return self._forward(tokens, all_positions=True)
+        window_slots = list(slots) if slots is not None else line_slots(tokens).tolist()
+        return self._forward(tokens, window_slots, all_positions=True)
 
-    def _forward(self, chunk: Sequence[int], all_positions: bool = False) -> FloatArray:
+    def _forward(
+        self, chunk: Sequence[int], slots: Sequence[int], all_positions: bool = False
+    ) -> FloatArray:
         ids = np.asarray(chunk, dtype=np.int64)
         if int(np.min(ids)) < 0 or int(np.max(ids)) >= self.config.vocab_size:
             raise ValueError("token id out of range")
@@ -98,6 +116,8 @@ class InferenceEngine:
         w = self.w
         H, D = self.n_heads, self.head_dim
         x = w["tok_emb.weight"][ids] + w["pos_emb.weight"][start : start + n]
+        if "slot_emb.weight" in w:
+            x = x + w["slot_emb.weight"][np.asarray(slots, dtype=np.int64)]
         # Query i (absolute position start+i) may see keys 0..start+i.
         future = np.triu(np.ones((n, start + n), dtype=bool), k=start + 1)
         for layer in range(self.config.n_layers):
@@ -119,6 +139,7 @@ class InferenceEngine:
             h = _gelu(h @ w[p + "mlp.fc.weight"] + w[p + "mlp.fc.bias"])
             x = x + (h @ w[p + "mlp.proj.weight"] + w[p + "mlp.proj.bias"])
         self.tokens.extend(int(t) for t in ids)
+        self.slots.extend(int(s) for s in slots)
         if all_positions:
             final = _layer_norm(x, w["ln_f.weight"], w["ln_f.bias"])
             all_logits = final @ w["tok_emb.weight"].T + w["head_bias"]

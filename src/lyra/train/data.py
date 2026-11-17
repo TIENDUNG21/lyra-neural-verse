@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
+from lyra.text.slots import line_slots
 from lyra.text.tokenizer import LINE6, LINE8, SPECIALS, UNK, Tokenizer
 
 IntArray = NDArray[np.int64]
@@ -68,6 +69,7 @@ class BatchSampler:
         batch_size: int,
         rng: np.random.Generator,
         token_dropout: float = 0.0,
+        slots: IntArray | None = None,
     ) -> None:
         if len(tokens) < block_size + 1:
             raise ValueError("token stream is shorter than one training window")
@@ -78,17 +80,21 @@ class BatchSampler:
         self.batch_size = batch_size
         self.rng = rng
         self.token_dropout = token_dropout
+        self.slots = line_slots(tokens) if slots is None else slots
 
-    def sample(self) -> tuple[IntArray, IntArray]:
+    def sample(self) -> tuple[IntArray, IntArray, IntArray]:
+        """Inputs, targets and the inputs' line slots (from the whole stream)."""
         high = len(self.tokens) - self.block_size
         starts = self.rng.integers(0, high, size=self.batch_size)
         offsets = np.arange(self.block_size)
-        x = self.tokens[starts[:, None] + offsets]
-        y = self.tokens[starts[:, None] + offsets + 1]
+        index = starts[:, None] + offsets
+        x = self.tokens[index]
+        y = self.tokens[index + 1]
+        s = self.slots[index]
         if self.token_dropout > 0.0:
             drop = (self.rng.random(x.shape) < self.token_dropout) & (x >= len(SPECIALS))
             x = np.where(drop, UNK, x)
-        return x, y
+        return x, y, s
 
 
 def unigram_log_prior(tokens: IntArray, vocab_size: int, alpha: float = 0.5) -> NDArray[np.float32]:
@@ -104,13 +110,14 @@ def unigram_log_prior(tokens: IntArray, vocab_size: int, alpha: float = 0.5) -> 
 
 def eval_windows(
     tokens: IntArray, block_size: int, *, skip_markers: bool = False
-) -> Iterator[tuple[IntArray, IntArray]]:
+) -> Iterator[tuple[IntArray, IntArray, int]]:
     """Windows that score every token of ``tokens[1:]`` exactly once.
 
     Windows advance by half a block; after the first one only the second half
     of each window is scored, so every scored token sees at least ``T/2``
     tokens of context. Unscored targets are ``-1``. With ``skip_markers``
     the line-marker targets are not scored either (syllable-only metrics).
+    Each item is ``(x, y, start)``; ``start`` locates the window in the stream.
     """
     stride = max(1, block_size // 2)
     n = len(tokens)
@@ -125,10 +132,10 @@ def eval_windows(
             y[:first_new] = -1
         if skip_markers:
             y[(y == LINE6) | (y == LINE8)] = -1
-        yield x[None, :], y[None, :]
+        yield x[None, :], y[None, :], start
         scored_until = end
         start += stride
 
 
-def count_scored(windows: Sequence[tuple[NDArray[Any], NDArray[Any]]]) -> int:
-    return int(sum(int((y >= 0).sum()) for _, y in windows))
+def count_scored(windows: Sequence[tuple[NDArray[Any], NDArray[Any], int]]) -> int:
+    return int(sum(int((y >= 0).sum()) for _, y, _ in windows))

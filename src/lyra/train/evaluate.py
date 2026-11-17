@@ -24,6 +24,7 @@ from numpy.typing import NDArray
 
 from lyra.io.modelfile import read_model_file
 from lyra.nn.inference import InferenceEngine
+from lyra.text.slots import line_slots
 from lyra.text.tokenizer import LINE6, LINE8, Tokenizer
 from lyra.train.corpus import load_corpus
 from lyra.train.data import IntArray, encode_blocks, eval_windows, split_blocks
@@ -43,10 +44,12 @@ def _log_softmax_rows(logits: NDArray[Any]) -> NDArray[np.float64]:
 def engine_perplexity(engine: InferenceEngine, tokens: IntArray) -> Perplexities:
     """Perplexity with the same half-overlapping windows as training-time evaluation."""
     results = []
+    slots = line_slots(tokens)
     for skip in (False, True):
         nll, count = 0.0, 0
-        for x, y in eval_windows(tokens, engine.config.block_size, skip_markers=skip):
-            logp = _log_softmax_rows(engine.logits_all([int(t) for t in x[0]]))
+        for x, y, start in eval_windows(tokens, engine.config.block_size, skip_markers=skip):
+            window_slots = [int(s) for s in slots[start : start + x.shape[1]]]
+            logp = _log_softmax_rows(engine.logits_all([int(t) for t in x[0]], window_slots))
             for position, target in enumerate(y[0]):
                 if target >= 0:
                     nll -= float(logp[position, target])

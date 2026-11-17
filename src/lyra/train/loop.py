@@ -27,6 +27,7 @@ from lyra.autograd import no_grad
 from lyra.nn import LyraLM, ModelConfig
 from lyra.optim import AdamW, clip_grad_norm, load_checkpoint, save_checkpoint, warmup_cosine
 from lyra.text.features import token_features
+from lyra.text.slots import line_slots
 from lyra.text.tokenizer import Tokenizer
 from lyra.train.corpus import load_corpus
 from lyra.train.csvlog import CsvLogger
@@ -109,13 +110,15 @@ def evaluate(model: LyraLM, tokens: IntArray) -> EvalResult:
     was_training = model.training
     model.eval()
     totals = []
+    slots = line_slots(tokens)
     with no_grad():
         for skip in (False, True):
             nll, count = 0.0, 0
-            for x, y in eval_windows(tokens, model.config.block_size, skip_markers=skip):
+            for x, y, start in eval_windows(tokens, model.config.block_size, skip_markers=skip):
                 scored = int((y >= 0).sum())
                 if scored:
-                    nll += model.loss(x, y).item() * scored
+                    s = slots[None, start : start + x.shape[1]]
+                    nll += model.loss(x, y, s).item() * scored
                     count += scored
             totals.append(nll / max(count, 1))
     model.train(was_training)
@@ -200,9 +203,9 @@ def train(
                 warmup_steps=config.warmup_steps,
                 total_steps=config.steps,
             )
-            x, y = sampler.sample()
+            x, y, s = sampler.sample()
             model.zero_grad()
-            loss = model.loss(x, y)
+            loss = model.loss(x, y, s)
             loss.backward()
             norm = clip_grad_norm(model.parameters(), config.grad_clip)
             optimizer.step(lr)

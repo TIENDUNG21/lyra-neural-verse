@@ -5,6 +5,7 @@ import pytest
 
 from lyra.nn import LyraLM, ModelConfig
 from lyra.nn.inference import InferenceEngine
+from lyra.text.slots import line_slots
 
 CFG = ModelConfig(vocab_size=13, block_size=8, d_model=16, n_layers=2, n_heads=4, dropout=0.1)
 
@@ -78,3 +79,28 @@ def test_logits_all_matches_every_position(model: LyraLM) -> None:
     np.testing.assert_allclose(engine.logits_all(tokens), reference(model, tokens), atol=1e-5)
     with pytest.raises(ValueError, match="block_size"):
         engine.logits_all([1] * 9)
+
+
+SLOT_CFG = ModelConfig(
+    vocab_size=13,
+    block_size=8,
+    d_model=16,
+    n_layers=2,
+    n_heads=4,
+    dropout=0.0,
+    slot_embeddings=True,
+)
+
+
+def test_slot_embeddings_match_with_global_slots_through_overflow() -> None:
+    model = LyraLM(SLOT_CFG)
+    model.eval()
+    stream = [2, 5, 6, 7, 8, 9, 10, 3, 5, 6, 7, 8, 9, 10, 11, 12, 2, 4]
+    slots = line_slots(stream)
+    engine = InferenceEngine(SLOT_CFG, model.state_dict())
+    for i, token in enumerate(stream):
+        logits = engine.feed([token])
+        window = stream[i + 1 - engine.length : i + 1]
+        expected = model.forward(np.array([window]), slots[None, i + 1 - len(window) : i + 1])
+        np.testing.assert_allclose(logits, expected.data[0, -1], atol=1e-5)
+    assert engine.slots == slots[-engine.length :].tolist()

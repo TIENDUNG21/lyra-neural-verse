@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from lyra.text.slots import UNKNOWN_SLOT
 from lyra.text.tokenizer import LINE6, LINE8, UNK, Tokenizer
 from lyra.train.corpus import load_corpus
 from lyra.train.data import (
@@ -46,8 +47,8 @@ def test_encode_blocks_restarts_markers_per_block() -> None:
 def test_batch_sampler_targets_are_shifted_inputs() -> None:
     tokens = np.arange(100, dtype=np.int64)
     sampler = BatchSampler(tokens, block_size=8, batch_size=4, rng=np.random.default_rng(0))
-    x, y = sampler.sample()
-    assert x.shape == y.shape == (4, 8)
+    x, y, s = sampler.sample()
+    assert x.shape == y.shape == s.shape == (4, 8)
     np.testing.assert_array_equal(y, x + 1)
     assert int(np.max(y)) <= 99
 
@@ -55,7 +56,7 @@ def test_batch_sampler_targets_are_shifted_inputs() -> None:
 def test_token_dropout_replaces_inputs_but_not_targets_or_markers() -> None:
     tokens = np.tile(np.array([LINE6, 10, 11, 12, 13, 14, 15], dtype=np.int64), 50)
     sampler = BatchSampler(tokens, 16, 64, np.random.default_rng(0), token_dropout=0.3)
-    x, y = sampler.sample()
+    x, y, _ = sampler.sample()
     clean = BatchSampler(tokens, 16, 64, np.random.default_rng(0)).sample()[0]
     dropped = x != clean
     assert np.all(x[dropped] == UNK)
@@ -75,16 +76,18 @@ def test_batch_sampler_rejects_short_streams() -> None:
 def test_eval_windows_score_each_target_exactly_once(n: int, block: int) -> None:
     tokens = np.arange(10, 10 + n, dtype=np.int64)
     scored: list[int] = []
-    for x, y in eval_windows(tokens, block):
+    for x, y, start in eval_windows(tokens, block):
         assert x.shape == y.shape
         assert x.shape[1] <= block
+        np.testing.assert_array_equal(x[0], tokens[start : start + x.shape[1]])
         scored.extend(int(t) for t in y[y >= 0])
     assert scored == list(range(11, 10 + n))
 
 
 def test_eval_windows_can_skip_marker_targets() -> None:
     tokens = np.array([LINE6, 5, 6, 7, LINE8, 8, 9], dtype=np.int64)
-    scored = [int(t) for _, y in eval_windows(tokens, 4, skip_markers=True) for t in y[y >= 0]]
+    windows = eval_windows(tokens, 4, skip_markers=True)
+    scored = [int(t) for _, y, _ in windows for t in y[y >= 0]]
     assert scored == [5, 6, 7, 8, 9]
 
 
@@ -94,3 +97,10 @@ def test_unigram_log_prior_orders_tokens_by_frequency() -> None:
     assert prior[5] > prior[6] > prior[0]
     assert prior[0] == prior[7]
     assert abs(float(prior.mean())) < 1e-6
+
+
+def test_batch_slots_come_from_the_whole_stream() -> None:
+    tokens = np.tile(np.array([LINE6, 10, 11, 12, 13, 14, 15], dtype=np.int64), 20)
+    _, _, slots = BatchSampler(tokens, 5, 8, np.random.default_rng(1)).sample()
+    assert UNKNOWN_SLOT not in slots  # even windows starting mid-line know their slots
+    assert set(np.unique(slots)) <= set(range(1, 8))
