@@ -26,6 +26,7 @@ import numpy as np
 from lyra.autograd import no_grad
 from lyra.nn import LyraLM, ModelConfig
 from lyra.optim import AdamW, clip_grad_norm, load_checkpoint, save_checkpoint, warmup_cosine
+from lyra.text.features import token_features
 from lyra.text.tokenizer import Tokenizer
 from lyra.train.corpus import load_corpus
 from lyra.train.csvlog import CsvLogger
@@ -141,7 +142,7 @@ def train(
     train_tokens = encode_blocks(split.train, tokenizer)
     val_tokens = encode_blocks(split.val, tokenizer)
     model_cfg = ModelConfig(vocab_size=tokenizer.vocab_size, **model_options)
-    model = LyraLM(model_cfg)
+    model = LyraLM(model_cfg, token_features(tokenizer.vocab))
     optimizer = AdamW(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
     rng = np.random.default_rng(config.seed)
     sampler = BatchSampler(

@@ -15,6 +15,7 @@ from lyra.autograd import functional as F
 from lyra.nn.attention import CausalSelfAttention
 from lyra.nn.layers import Dropout, Embedding, LayerNorm, Linear
 from lyra.nn.module import Module, ModuleList
+from lyra.text.features import TokenFeatures
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,7 @@ class ModelConfig:
     mlp_ratio: int = 4
     dropout: float = 0.1
     seed: int = 0
+    phonology_embeddings: bool = False
 
     def __post_init__(self) -> None:
         if self.d_model % self.n_heads != 0:
@@ -86,17 +88,55 @@ class Block(Module):
 
 
 class LyraLM(Module):
-    """Token + learned position embeddings, N blocks, final norm, tied output head."""
+    """Token + learned position embeddings, N blocks, final norm, tied output head.
 
-    def __init__(self, cfg: ModelConfig) -> None:
+    With ``phonology_embeddings`` the token table is factored: the vector of a
+    syllable is the sum of its own vector and the vectors of its onset, rhyme
+    and tone (``features`` gives those ids per token). Rare syllables then
+    share what is known about their sound, and because the output head is
+    tied to the same table, the softmax can raise a whole rhyme or tone class
+    at once. ``folded_state_dict`` collapses the sum into one plain table.
+    """
+
+    def __init__(self, cfg: ModelConfig, features: TokenFeatures | None = None) -> None:
         super().__init__()
         self.config = cfg
         rng = np.random.default_rng(cfg.seed)
         self.tok_emb = Embedding(cfg.vocab_size, cfg.d_model, rng=rng)
+        self.features = features
+        if cfg.phonology_embeddings:
+            if features is None or features.vocab_size != cfg.vocab_size:
+                raise ValueError("phonology_embeddings need token features for the vocabulary")
+            self.onset_emb = Embedding(features.n_onsets, cfg.d_model, rng=rng)
+            self.rhyme_emb = Embedding(features.n_rhymes, cfg.d_model, rng=rng)
+            self.tone_emb = Embedding(features.n_tones, cfg.d_model, rng=rng)
         self.pos_emb = Embedding(cfg.block_size, cfg.d_model, rng=rng)
         self.drop = Dropout(cfg.dropout, rng=rng)
         self.blocks = ModuleList(Block(cfg, rng) for _ in range(cfg.n_layers))
         self.ln_f = LayerNorm(cfg.d_model)
+
+    def token_table(self) -> Tensor:
+        """The (vocab, d_model) embedding table used for input and output."""
+        if not self.config.phonology_embeddings:
+            return self.tok_emb.weight
+        f = self.features
+        assert f is not None
+        return (
+            self.tok_emb.weight
+            + self.onset_emb.forward(f.onset)
+            + self.rhyme_emb.forward(f.rhyme)
+            + self.tone_emb.forward(f.tone)
+        )
+
+    def folded_state_dict(self) -> tuple[ModelConfig, dict[str, NDArray[Any]]]:
+        """An equivalent plain model: factored embeddings summed into ``tok_emb``."""
+        state = self.state_dict()
+        if not self.config.phonology_embeddings:
+            return self.config, state
+        state["tok_emb.weight"] = self.token_table().data.copy()
+        for name in ("onset_emb.weight", "rhyme_emb.weight", "tone_emb.weight"):
+            del state[name]
+        return dataclasses.replace(self.config, phonology_embeddings=False), state
 
     def forward(self, ids: NDArray[np.integer[Any]], last_only: bool = False) -> Tensor:
         """Return logits of shape ``(B, T, vocab)`` (or ``(B, 1, vocab)`` if ``last_only``)."""
@@ -108,7 +148,8 @@ class LyraLM(Module):
             raise ValueError(
                 f"sequence length {seq_len} exceeds block_size {self.config.block_size}"
             )
-        x = self.tok_emb.forward(ids) + self.pos_emb.forward(np.arange(seq_len))
+        table = self.token_table()
+        x = F.embedding(table, ids) + self.pos_emb.forward(np.arange(seq_len))
         x = self.drop.forward(x)
         for block in self.blocks:
             assert isinstance(block, Block)
@@ -116,7 +157,7 @@ class LyraLM(Module):
         x = self.ln_f.forward(x)
         if last_only:
             x = x[:, -1:]
-        return x @ self.tok_emb.weight.T
+        return x @ table.T
 
     def loss(self, ids: NDArray[np.integer[Any]], targets: NDArray[np.integer[Any]]) -> Tensor:
         """Mean next-token cross-entropy; targets equal to -1 are ignored."""
