@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from lyra.text.tokenizer import LINE6, LINE8, Tokenizer
+from lyra.text.tokenizer import LINE6, LINE8, UNK, Tokenizer
 from lyra.train.corpus import load_corpus
 from lyra.train.data import BatchSampler, encode_blocks, eval_windows, split_blocks
 
@@ -44,6 +44,20 @@ def test_batch_sampler_targets_are_shifted_inputs() -> None:
     assert x.shape == y.shape == (4, 8)
     np.testing.assert_array_equal(y, x + 1)
     assert int(np.max(y)) <= 99
+
+
+def test_token_dropout_replaces_inputs_but_not_targets_or_markers() -> None:
+    tokens = np.tile(np.array([LINE6, 10, 11, 12, 13, 14, 15], dtype=np.int64), 50)
+    sampler = BatchSampler(tokens, 16, 64, np.random.default_rng(0), token_dropout=0.3)
+    x, y = sampler.sample()
+    clean = BatchSampler(tokens, 16, 64, np.random.default_rng(0)).sample()[0]
+    dropped = x != clean
+    assert np.all(x[dropped] == UNK)
+    assert not np.any(dropped & (clean == LINE6))
+    assert 0.2 < dropped[clean != LINE6].mean() < 0.4
+    assert not np.any(y == UNK)
+    with pytest.raises(ValueError, match="token_dropout"):
+        BatchSampler(tokens, 16, 4, np.random.default_rng(0), token_dropout=1.0)
 
 
 def test_batch_sampler_rejects_short_streams() -> None:

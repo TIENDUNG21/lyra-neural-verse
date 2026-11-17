@@ -52,6 +52,7 @@ class TrainConfig:
     min_lr: float = 1e-4
     warmup_steps: int = 200
     weight_decay: float = 0.1
+    token_dropout: float = 0.0
     grad_clip: float = 1.0
     eval_every: int = 100
     log_every: int = 10
@@ -143,7 +144,9 @@ def train(
     model = LyraLM(model_cfg)
     optimizer = AdamW(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
     rng = np.random.default_rng(config.seed)
-    sampler = BatchSampler(train_tokens, model_cfg.block_size, config.batch_size, rng)
+    sampler = BatchSampler(
+        train_tokens, model_cfg.block_size, config.batch_size, rng, config.token_dropout
+    )
 
     start_step, best_loss, best_step, best_syllable_ppl, elapsed_before = (
         0,

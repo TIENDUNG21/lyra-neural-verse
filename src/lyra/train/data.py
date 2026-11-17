@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from lyra.text.tokenizer import LINE6, LINE8, Tokenizer
+from lyra.text.tokenizer import LINE6, LINE8, SPECIALS, UNK, Tokenizer
 
 IntArray = NDArray[np.int64]
 
@@ -54,17 +54,30 @@ def encode_blocks(blocks: Sequence[Sequence[str]], tokenizer: Tokenizer) -> IntA
 
 
 class BatchSampler:
-    """Random contiguous windows: ``x = s[i : i+T]``, ``y = s[i+1 : i+T+1]``."""
+    """Random contiguous windows: ``x = s[i : i+T]``, ``y = s[i+1 : i+T+1]``.
+
+    ``token_dropout`` replaces that fraction of input syllables (never line
+    markers, never targets) with ``<unk>``: word dropout, a regularizer that
+    keeps a small model from memorizing exact contexts of a small corpus.
+    """
 
     def __init__(
-        self, tokens: IntArray, block_size: int, batch_size: int, rng: np.random.Generator
+        self,
+        tokens: IntArray,
+        block_size: int,
+        batch_size: int,
+        rng: np.random.Generator,
+        token_dropout: float = 0.0,
     ) -> None:
         if len(tokens) < block_size + 1:
             raise ValueError("token stream is shorter than one training window")
+        if not 0.0 <= token_dropout < 1.0:
+            raise ValueError("token_dropout must be in [0, 1)")
         self.tokens = tokens
         self.block_size = block_size
         self.batch_size = batch_size
         self.rng = rng
+        self.token_dropout = token_dropout
 
     def sample(self) -> tuple[IntArray, IntArray]:
         high = len(self.tokens) - self.block_size
@@ -72,6 +85,9 @@ class BatchSampler:
         offsets = np.arange(self.block_size)
         x = self.tokens[starts[:, None] + offsets]
         y = self.tokens[starts[:, None] + offsets + 1]
+        if self.token_dropout > 0.0:
+            drop = (self.rng.random(x.shape) < self.token_dropout) & (x >= len(SPECIALS))
+            x = np.where(drop, UNK, x)
         return x, y
 
 
