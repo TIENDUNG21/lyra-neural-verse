@@ -43,15 +43,31 @@ def log_softmax(x: Tensor, axis: int = -1) -> Tensor:
 
 
 def gelu(x: Tensor) -> Tensor:
-    """GELU with the tanh approximation used by GPT-2."""
+    """GELU with the tanh approximation used by GPT-2.
+
+    Written with in-place NumPy operations: this is the largest elementwise
+    tensor in the model (``batch x time x 4*d_model``).
+    """
     a = x.data
-    inner = _GELU_C * (a + 0.044715 * a**3)
-    t = np.tanh(inner)
-    out = 0.5 * a * (1.0 + t)
+    a2 = a * a
+    t = a2 * 0.044715
+    t += 1.0
+    t *= a
+    t *= _GELU_C
+    np.tanh(t, out=t)  # t = tanh(c * (a + 0.044715 a^3))
+    out = t + 1.0
+    out *= a
+    out *= 0.5
 
     def grad_fn(g: Array) -> tuple[Array]:
-        d_inner = _GELU_C * (1.0 + 3.0 * 0.044715 * a * a)
-        return (g * (0.5 * (1.0 + t) + 0.5 * a * (1.0 - t * t) * d_inner),)
+        d = t * t
+        np.subtract(1.0, d, out=d)
+        d *= a
+        d *= 0.5 * _GELU_C
+        d *= 1.0 + 3.0 * 0.044715 * a2
+        d += 0.5 * (1.0 + t)
+        d *= g
+        return (d,)
 
     return Tensor.make(out, (x,), grad_fn, "gelu")
 
@@ -140,7 +156,7 @@ def dropout(x: Tensor, p: float, rng: np.random.Generator, training: bool) -> Te
     if not training or p == 0.0:
         return x
     scale = 1.0 / (1.0 - p)
-    mask = (rng.random(x.shape) >= p).astype(x.dtype) * scale
+    mask = (rng.random(x.shape, dtype=np.float32) >= p).astype(x.dtype) * scale
     return Tensor.make(x.data * mask, (x,), lambda g: (g * mask,), "dropout")
 
 
